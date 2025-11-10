@@ -7,8 +7,14 @@ import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.texture.TextureUtil;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+
+import java.awt.image.BufferedImage;
+import java.util.Arrays;
 
 public class KeyBindingsHandler {
 
@@ -17,9 +23,15 @@ public class KeyBindingsHandler {
     public void onKeyInput(InputEvent.KeyInputEvent event) {
         EntityClientPlayerMP player = Minecraft.getMinecraft().thePlayer;
 
-        if(KeyBindings.saveTexture.isPressed()) {
+        if (KeyBindings.saveTexture.isPressed()) {
             ItemStack item = player.getHeldItem();
-            Minecraft
+            String name = item.getItem().getIconIndex(item).getIconName();
+            System.out.println("FOUND AN ITEM TEXTURE: " + name);
+            TextureAtlasSprite texture = ((TextureMap) Minecraft.getMinecraft().getTextureManager().getTexture(TextureMap.locationItemsTexture)).getAtlasSprite(name);
+            int[][] sprite = texture.getFrameTextureData(0);
+
+
+            System.out.println(Arrays.deepToString(sprite));
         }
     }
 }

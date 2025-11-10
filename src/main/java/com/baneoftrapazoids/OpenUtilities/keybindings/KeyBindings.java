@@ -1,5 +1,6 @@
 package com.baneoftrapazoids.OpenUtilities.keybindings;
 
+import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.client.settings.KeyBinding;
@@ -11,5 +12,9 @@ public class KeyBindings {
 
     static {
         saveTexture = new KeyBinding("key.saveTexture", Keyboard.KEY_F9, "Open Utilities");
+    }
+
+    public static void init() {
+        ClientRegistry.registerKeyBinding(saveTexture);
     }
 }
