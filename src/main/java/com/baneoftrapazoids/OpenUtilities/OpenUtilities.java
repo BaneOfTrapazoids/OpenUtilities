@@ -1,5 +1,6 @@
 package com.baneoftrapazoids.OpenUtilities;
 
+import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,6 +16,9 @@ public class OpenUtilities {
 
     public static final String MODID = "OpenUtilities";
     public static final Logger LOG = LogManager.getLogger(MODID);
+
+    public static final String networkChannelName = "OpenUtilities";
+    public static SimpleNetworkWrapper network;
 
     @SidedProxy(clientSide = "com.baneoftrapazoids.OpenUtilities.ClientProxy", serverSide = "com.baneoftrapazoids.OpenUtilities.CommonProxy")
     public static CommonProxy proxy;
