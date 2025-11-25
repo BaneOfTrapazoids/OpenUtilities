@@ -2,6 +2,7 @@ package com.baneoftrapazoids.OpenUtilities.util;
 
 import appeng.client.ClientHelper;
 import appeng.client.render.BusRenderer;
+import appeng.items.parts.ItemMultiPart;
 import codechicken.nei.guihook.GuiContainerManager;
 import com.baneoftrapazoids.OpenUtilities.OpenUtilities;
 import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
@@ -25,6 +26,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 public class TextureHandler {
@@ -33,11 +35,12 @@ public class TextureHandler {
         int imageDim = icon.getIconWidth();
         System.out.println("FOUND AN ITEM TEXTURE: " + icon.getIconName() + " of dimensions: " + icon.getIconWidth() + "x" + icon.getIconHeight());
 
-        if(item.getItem() instanceof ItemBlock) {
+        if(item.getItem() instanceof ItemBlock || item.getItem() instanceof ItemMultiPart) {
             imageDim = 128;
         }
 
         ByteBuffer rawPixels = BufferUtils.createByteBuffer(Math.max((4 * imageDim * imageDim), 1024));
+
         Framebuffer buffer = new Framebuffer(imageDim, imageDim, true);
         buffer.bindFramebuffer(true);
         OpenGlHelper.func_153171_g(GL30.GL_READ_FRAMEBUFFER, buffer.framebufferObject);
@@ -45,7 +48,9 @@ public class TextureHandler {
         OpenUtilities.LOG.info("Built both buffers");
 
         setupRenderState();
-        GuiContainerManager.drawItem(0, 0, item);
+        ItemStack drawItem = item.copy();
+        drawItem.stackSize = 1;
+        GuiContainerManager.drawItem(0, 0, drawItem);
 
         OpenUtilities.LOG.info("Drew item");
         GL11.glReadPixels(0, 0, imageDim, imageDim, GL12.GL_BGRA, GL11.GL_UNSIGNED_BYTE, rawPixels);
@@ -91,7 +96,9 @@ public class TextureHandler {
 
     public static void readBytesToImg(byte[] pixelsBytes, int imageDim, BufferedImage img) {
         int[] pixels = new int[imageDim * imageDim];
-        ByteBuffer.wrap(pixelsBytes).asIntBuffer().get(pixels);
+        ByteBuffer buffer = BufferUtils.createByteBuffer(pixelsBytes.length).put(pixelsBytes);
+        buffer.position(0);
+        buffer.asIntBuffer().get(pixels);
         img.setRGB(0, 0, imageDim, imageDim, pixels, 0, imageDim);
     }
 

@@ -2,7 +2,9 @@ package com.baneoftrapazoids.OpenUtilities.mixins.late;
 
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IItemList;
+import appeng.items.parts.ItemMultiPart;
 import appeng.me.GridAccessException;
+import appeng.parts.CableBusStorage;
 import appeng.tile.misc.TileSecurity;
 import com.baneoftrapazoids.OpenUtilities.OpenUtilities;
 import com.baneoftrapazoids.OpenUtilities.networking.TextureRenderRequestPacket;
@@ -18,6 +20,7 @@ import li.cil.oc.integration.appeng.UpgradeAE;
 import li.cil.oc.util.ResultWrapper;
 import li.cil.oc.util.ResultWrapper$;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,7 +40,7 @@ import static com.baneoftrapazoids.OpenUtilities.util.TextureHandler.sanitizeNam
 public abstract class OpenComputersMixins implements NetworkControl<TileSecurity> {
     @Callback(doc = "HELLO FROM OC MIXINS!")
     public Object[] getItemsWithTextures(Context ctx, Arguments args) throws GridAccessException {
-        Object[] res = new Object[]{"You really shouldn't be seeing this..."};
+        ArrayList<Object> res = new ArrayList<>();
         IItemList<IAEItemStack> items = this.tile().getProxy().getStorage().getItemInventory().getStorageList();
         if(items != null) {
             for (IAEItemStack itemStack : items) {
@@ -50,7 +53,7 @@ public abstract class OpenComputersMixins implements NetworkControl<TileSecurity
                         OpenUtilities.network.sendTo(new TextureRenderRequestPacket(itemStack.getItemStack(), reqId), players.get(0));
                         byte[] pixels = null;
                         long start = System.nanoTime();
-                        while(System.nanoTime() - start < 20_000_000) {
+                        while(System.nanoTime() - start < 500_000_000) {
                             Pair<Integer, byte[]> pair = TextureRenderResponsePacket.renderedTextures.get(reqId);
                             if(pair != null && pair.second != null && pair.first == -1) {
                                 pixels = pair.second;
@@ -60,12 +63,15 @@ public abstract class OpenComputersMixins implements NetworkControl<TileSecurity
                         }
                         if(pixels != null) {
                             int imageDim = itemStack.getItemStack().getIconIndex().getIconWidth();
+                            if(itemStack.getItem() instanceof ItemBlock || itemStack.getItem() instanceof ItemMultiPart) {
+                                imageDim = 128;
+                            }
                             BufferedImage img = new BufferedImage(imageDim, imageDim, BufferedImage.TYPE_INT_ARGB);
-                            TextureHandler.readBytesToImg(pixels, itemStack.getItemStack().getIconIndex().getIconWidth(), img);
+                            TextureHandler.readBytesToImg(pixels, imageDim, img);
 
                             try {
                                 OpenUtilities.LOG.info("TEXTURE LENGTH: " + imageDim * imageDim);
-                                File output = new File("savedTextures/" + sanitizeName(itemStack.getItemStack().getIconIndex().getIconName()) + ".png");
+                                File output = new File("savedTextures/" + sanitizeName(itemStack.getItemStack().getIconIndex().getIconName() + "_" + itemStack.getItemDamage()) + ".png");
                                 ImageIO.write(img, "png", output);
                             }
                             catch (IOException e) {
@@ -73,20 +79,21 @@ public abstract class OpenComputersMixins implements NetworkControl<TileSecurity
                             }
 
                         } else {
-                            res = new Object[]{"Timeout on image render"};
+                            res.add("Timeout on image render " + itemStack.getItemStack().getDisplayName());
                         }
                     } else {
-                        res = new Object[]{"No players were online..."};
+                        res.add("No players were online...");
+                        break;
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                    res = new Object[]{"Ran into error:" + e};
+                    res.add("Ran into error:" + e);
                 }
             }
         }
         else {
-            res = new Object[]{"Could not find items"};
+            res.add("Could not find items :(");
         }
-        return ResultWrapper.result(JavaConverters.asScalaIteratorConverter(Arrays.stream(res).iterator()).asScala().toSeq());
+        return ResultWrapper.result(JavaConverters.asScalaIteratorConverter(Arrays.stream(res.toArray()).iterator()).asScala().toSeq());
     }
 }
