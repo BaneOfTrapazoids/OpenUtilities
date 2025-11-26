@@ -10,11 +10,13 @@ import scala.Int;
 
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class TextureRenderResponsePacket implements IMessage {
 
-    public static HashMap<Integer, Pair<Integer, byte[]>> renderedTextures = new HashMap<>();
+    private static final HashMap<Integer, byte[]> partialRenderedTextures = new HashMap<>();
+    public static final HashMap<Integer, byte[]> renderedTextures = new HashMap<>();
 
     byte[] pixels;
     int length;
@@ -51,18 +53,25 @@ public class TextureRenderResponsePacket implements IMessage {
 
         @Override
         public IMessage onMessage(TextureRenderResponsePacket message, MessageContext ctx) {
-            Pair<Integer, byte[]> oldPair = renderedTextures.get(message.requestId);
-            if(message.chunk == 0 || oldPair == null) {
-                renderedTextures.put(message.requestId, new Pair<>(message.chunk, message.pixels));
+            byte[] oldPixels = partialRenderedTextures.get(message.requestId);
+            byte[] newPixels = message.pixels;
+            if(oldPixels == null) {
+                partialRenderedTextures.put(message.requestId, message.pixels);
             } else {
-                byte[] oldPixels = oldPair.second;
-                byte[] newPixels = new byte[oldPixels.length + message.pixels.length];
+                newPixels = new byte[oldPixels.length + message.pixels.length];
 
                 System.arraycopy(oldPixels, 0, newPixels, 0, oldPixels.length);
                 System.arraycopy(message.pixels, 0, newPixels, oldPixels.length, message.pixels.length);
+                System.out.println("NEW PIXELS contains " + Arrays.toString(newPixels));
 
-                renderedTextures.put(message.requestId, new Pair<>(message.chunk, newPixels));
+                if(message.chunk != -1) {
+                    partialRenderedTextures.put(message.requestId, newPixels);
+                }
             }
+            System.out.println("Received final packet on: " + message.requestId + " at time " + System.nanoTime());
+            renderedTextures.put(message.requestId, newPixels);
+            System.out.println(Thread.currentThread().toString() + Thread.currentThread().hashCode());
+
             return null;
         }
     }
