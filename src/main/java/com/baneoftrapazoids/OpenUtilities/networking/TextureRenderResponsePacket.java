@@ -1,5 +1,6 @@
 package com.baneoftrapazoids.OpenUtilities.networking;
 
+import com.baneoftrapazoids.OpenUtilities.util.Internet;
 import com.baneoftrapazoids.OpenUtilities.util.Pair;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -68,6 +69,7 @@ public class TextureRenderResponsePacket implements IMessage {
                     partialRenderedTextures.put(message.requestId, newPixels);
                 }
             }
+
             System.out.println("Received final packet on: " + message.requestId + " at time " + System.nanoTime());
             renderedTextures.put(message.requestId, newPixels);
             System.out.println(Thread.currentThread().toString() + Thread.currentThread().hashCode());

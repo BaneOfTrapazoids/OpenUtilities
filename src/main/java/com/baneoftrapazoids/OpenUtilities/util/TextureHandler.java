@@ -1,61 +1,51 @@
 package com.baneoftrapazoids.OpenUtilities.util;
 
-import appeng.client.ClientHelper;
-import appeng.client.render.BusRenderer;
 import appeng.items.parts.ItemMultiPart;
 import codechicken.nei.guihook.GuiContainerManager;
 import com.baneoftrapazoids.OpenUtilities.OpenUtilities;
-import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.IIcon;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.*;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 
 public class TextureHandler {
     public static byte[] renderTexture(ItemStack item) throws LWJGLException {
         IIcon icon = item.getItem().getIconIndex(item);
-        int imageDim = icon.getIconWidth();
-        System.out.println("FOUND AN ITEM TEXTURE: " + icon.getIconName() + " of dimensions: " + icon.getIconWidth() + "x" + icon.getIconHeight());
+        int imageDim = Math.max(icon.getIconWidth(), 64);
 
-        if(item.getItem() instanceof ItemBlock || item.getItem() instanceof ItemMultiPart) {
-            imageDim = 128;
-        }
+//        if(item.getItem() instanceof ItemBlock || item.getItem() instanceof ItemMultiPart) {
+//            imageDim = 64;
+//        }
+        //imageDim = Math.max(imageDim, 32);
 
-        ByteBuffer rawPixels = BufferUtils.createByteBuffer(Math.max((4 * imageDim * imageDim), 1024));
+        ByteBuffer rawPixels = BufferUtils.createByteBuffer(4 * imageDim * imageDim);
 
         Framebuffer buffer = new Framebuffer(imageDim, imageDim, true);
         buffer.bindFramebuffer(true);
         OpenGlHelper.func_153171_g(GL30.GL_READ_FRAMEBUFFER, buffer.framebufferObject);
-
-        OpenUtilities.LOG.info("Built both buffers");
 
         setupRenderState();
         ItemStack drawItem = item.copy();
         drawItem.stackSize = 1;
         GuiContainerManager.drawItem(0, 0, drawItem);
 
-        OpenUtilities.LOG.info("Drew item");
         GL11.glReadPixels(0, 0, imageDim, imageDim, GL12.GL_BGRA, GL11.GL_UNSIGNED_BYTE, rawPixels);
-        OpenUtilities.LOG.info("Read pixels to buffer");
 
+        // OpenGL draws things upside down, so we flip it again
         byte[] result = new byte[4 * imageDim * imageDim];
         byte[] src = new byte[4 * imageDim * imageDim];
         rawPixels.get(src);
@@ -77,7 +67,7 @@ public class TextureHandler {
 
         try {
             OpenUtilities.LOG.info("TEXTURE LENGTH: " + imageDim * imageDim);
-            File output = new File(path + sanitizeName(icon.getIconName()) + ".png");
+            File output = new File(path + sanitizedName(item) + ".png");
             ImageIO.write(img, "png", output);
         }
         catch (IOException e) {
@@ -102,7 +92,9 @@ public class TextureHandler {
         img.setRGB(0, 0, imageDim, imageDim, pixels, 0, imageDim);
     }
 
-    public static String sanitizeName(String name) {
+    // Deal with differently named items later
+    public static String sanitizedName(ItemStack item) {
+        String name = item.getUnlocalizedName() + "_" + item.getItemDamage();
         return name.replace(':', '_').replace('.', '_');
     }
 
@@ -119,6 +111,5 @@ public class TextureHandler {
 
         RenderHelper.enableGUIStandardItemLighting();
         GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-
     }
 }
